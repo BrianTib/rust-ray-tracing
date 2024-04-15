@@ -1,4 +1,3 @@
-use num_traits::{Num, NumOps, Bounded, Float};
 use std::{ops::Range, time::SystemTime};
 
 pub mod vec;
@@ -13,17 +12,9 @@ pub use color::Color;
 mod material;
 pub use material::Material;
 
-/// A trait for any type that is considered a number
-pub trait Numeric: Num + NumOps + Float + Bounded + Copy {}
-impl<T> Numeric for T
-where
-    T: Num + NumOps + Float + Bounded + Copy
-{}
-
 // In-house function for generating simple randomness without importing an entire crate
 /// Generates a random f32 between 0.0 - 1.0
-pub fn random<T>() -> T
-where T: Numeric {
+pub fn random() -> f32 {
     // Create a seed from UNIX EPOCH until now in nanoseconds
     let seed = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
@@ -40,7 +31,7 @@ where T: Numeric {
     // Divide by the closest maximum value depending on the amount of digits
     let max = 10u128.pow(seed.to_string().len() as u32) - 1;
 
-    (seed as f32 / max as f32) as T
+    seed as f32 / max as f32
 }
 
 pub fn random_lcg() -> f32 {
@@ -66,11 +57,6 @@ pub fn random_lcg() -> f32 {
     random_u64 as f32 / m as f32
 }
 
-pub fn random_range<T>(range: Range<T>) -> T
-where T: Numeric {
-    let min = range.start;
-    let max = range.end;
-    let random: T = random();
-
-    random * (max - min + T::one()) + min
+pub fn random_range(range: Range<f32>) -> f32 {
+    random() * (range.end - range.start + 1.0) + range.start
 }

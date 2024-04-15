@@ -2,9 +2,9 @@ use crate::util::vec::*;
 
 #[derive(Clone)]
 pub struct Camera {
-    pub position: Vec3<f32>,
-    pub direction: Vec3<f32>,
-    pub rays: Vec<Vec3<f32>>,
+    pub position: Vec3,
+    pub direction: Vec3,
+    pub rays: Vec<Vec3>,
     pub fov: f32,
     pub near_clip: f32,
     pub far_clip: f32
@@ -28,7 +28,7 @@ impl Camera {
         Self::default()
     }
 
-    pub fn get_ray_directions(&mut self, width: u32, height: u32, aspect_ratio: f32) -> &Vec<Vec3<f32>> {
+    pub fn get_ray_directions(&mut self, width: u32, height: u32, aspect_ratio: f32) -> &Vec<Vec3> {
         self.rays = Vec::new();
 
         for y in 0..height {
@@ -48,12 +48,12 @@ impl Camera {
         &self.rays
     }
 
-    pub fn set_position(mut self, position: Vec3<f32>) -> Self {
+    pub fn set_position(mut self, position: Vec3) -> Self {
         self.position = position;
         self
     }
 
-    pub fn set_direction(mut self, direction: Vec3<f32>) -> Self {
+    pub fn set_direction(mut self, direction: Vec3) -> Self {
         self.direction = direction.mul_by(-1.0);
         self
     }

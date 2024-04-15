@@ -1,24 +1,34 @@
 #![allow(dead_code)]
-use crate::util::{Numeric, Float, vec::Vector, random_range};
+use crate::util::{vec::Vector, random_range};
+use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq)]
-pub struct Color<T> {
-    pub r: T,
-    pub g: T,
-    pub b: T,
-    pub a: T
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Color {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub a: f32
 }
 
-impl<T> Color<T>
-where T: Numeric
-{
+impl Hash for Color {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Convert each f32 to u64 and hash the resulting tuple
+        let r_bits = self.r.to_bits();
+        let g_bits = self.g.to_bits();
+        let b_bits = self.b.to_bits();
+        let a_bits = self.a.to_bits();
+        (r_bits, g_bits, b_bits, a_bits).hash(state);
+    }
+}
+
+impl Color {
     /// Create a new color using RGB values (range: 0.0 - 1.0)
-    pub fn rgb(r: T, g: T, b: T) -> Self {
-        Color { r, g, b, a: T::one() }
+    pub fn rgb(r: f32, g: f32, b: f32) -> Self {
+        Color { r, g, b, a: 1.0 }
     }
 
     /// Create a new color using RGBA values (range: 0.0 - 1.0)
-    pub fn rgba(r: T, g: T, b: T, a: T) -> Self {
+    pub fn rgba(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color { r, g, b, a }
     }
 
@@ -60,16 +70,14 @@ where T: Numeric
     // }
 }
 
-impl<T> Vector<T> for Color<T>
-where T: Numeric
-{
-    fn from(v: &[T]) -> Self {
+impl Vector for Color {
+    fn from(v: &[f32]) -> Self {
         match v.len() {
             1 => Self { r: v[0], g: v[0], b: v[0], a: v[0] },
-            2 => Self { r: v[0], g: v[1], b: T::zero(), a: T::zero() },
-            3 => Self { r: v[0], g: v[1], b: v[2], a: T::zero() },
+            2 => Self { r: v[0], g: v[1], b: 0.0, a: 0.0 },
+            3 => Self { r: v[0], g: v[1], b: v[2], a: 0.0 },
             4 => Self { r: v[0], g: v[1], b: v[2], a: v[3] },
-            _ => Self { r: T::zero(), g: T::zero(), b: T::zero(), a: T::zero() }
+            _ => Self { r: 0.0, g: 0.0, b: 0.0, a: 0.0 }
         }
     }
 
@@ -82,9 +90,7 @@ where T: Numeric
         }
     }
 
-    fn random(min: T, max: T) -> Self
-    where T: Numeric
-    {
+    fn random(min: f32, max: f32) -> Self {
         Self {
             r: random_range(min..max),
             g: random_range(min..max),
@@ -140,11 +146,11 @@ where T: Numeric
         }
     }
 
-    fn dot(&self, other: &Self) -> T where T: Float {
+    fn dot(&self, other: &Self) -> f32 {
         self.r * other.r + self.g * other.g + self.b * other.b + self.a * other.a
     }
 
-    fn squared_magnitude(&self) -> T where T: Float {
+    fn squared_magnitude(&self) -> f32 {
         self.r * self.r + self.g * self.g + self.b * self.b + self.a * self.a
     }
 }

@@ -10,7 +10,7 @@ pub trait Shape: 'static  {
     fn has_radius(&self) -> bool;
     fn is_3d(&self) -> bool;
     fn get_radius(&self) -> Option<f32>;
-    fn get_position(&self) -> Vec3<f32>;
-    fn get_surface_color(&self) -> Color<f32>;
+    fn get_position(&self) -> Vec3;
+    fn get_surface_color(&self) -> Color;
     fn get_material(&self) -> Material;
 }

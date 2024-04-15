@@ -1,24 +1,20 @@
 #![allow(dead_code)]
-use crate::util::Numeric;
-
-pub struct Matrix4<T> {
-    pub data: [[T; 4]; 4]
+pub struct Matrix4 {
+    pub data: [[f32; 4]; 4]
 }
 
-pub struct Matrix3<T> {
-    pub data: [[T; 3]; 3]
+pub struct Matrix3 {
+    pub data: [[f32; 3]; 3]
 }
 
-impl<T> Matrix3<T>
-where T: Numeric {
-    pub fn new(data: [[T; 3]; 3]) -> Self where T: Numeric {
+impl Matrix3 {
+    pub fn new(data: [[f32; 3]; 3]) -> Self {
         Self { data }
     }
 }
 
-impl<T> Matrix4<T>
-where T: Numeric {
-    pub fn new(data: [[T; 4]; 4]) -> Self {
+impl Matrix4 {
+    pub fn new(data: [[f32; 4]; 4]) -> Self {
         Self { data }
     }
 }

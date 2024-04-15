@@ -1,27 +1,23 @@
-use crate::util::{Numeric, vec::Vector, random_range};
+use crate::util::{vec::Vector, random_range};
 
 #[derive(Debug, Clone, Copy)]
-pub struct Vec2<T> {
-    pub x: T,
-    pub y: T,
+pub struct Vec2 {
+    pub x: f32,
+    pub y: f32,
 }
 
-impl<T> Vec2<T>
-where T: Numeric
-{
-    pub fn new(x: T, y: T) -> Self {
+impl Vec2 {
+    pub fn new(x: f32, y: f32) -> Self {
         Self { x, y }
     }
 }
 
-impl<T> Vector<T> for Vec2<T>
-where T: Numeric
-{
-    fn from(v: &[T]) -> Self {
+impl Vector for Vec2 {
+    fn from(v: &[f32]) -> Self {
         match v.len() {
             1 => Self { x: v[0], y: v[0] },
             2 => Self { x: v[0], y: v[1] },
-            _ => Self { x: T::zero(), y: T::zero() }
+            _ => Self { x: 0.0, y: 0.0 }
         }
     }
 
@@ -32,9 +28,7 @@ where T: Numeric
         }
     }
 
-    fn random(min: T, max: T) -> Self
-    where T: Numeric
-    {
+    fn random(min: f32, max: f32) -> Self {
         Self {
             x: random_range(min..max),
             y: random_range(min..max)
@@ -78,11 +72,11 @@ where T: Numeric
         }
     }
 
-    fn dot(&self, other: &Self) -> T where T: Numeric {
+    fn dot(&self, other: &Self) -> f32 {
         self.x * other.x + self.y * other.y
     }
     
-    fn squared_magnitude(&self) -> T where T: Numeric {
+    fn squared_magnitude(&self) -> f32 {
         self.x * self.x + self.y * self.y
     }
 }

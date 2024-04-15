@@ -161,7 +161,7 @@ fn evaluate_pixel(
     ray: &mut Ray,
     shapes: &[Box<dyn Shape>],
     lights: &[Box<dyn Light>]
-) -> Color<f32> {
+) -> Color {
     let sky_color = Color::rgb(0.2, 0.2, 0.2);
 
     let mut color = Color::rgb(0.0, 0.0, 0.0);
@@ -252,7 +252,7 @@ fn get_hit_color(
     shape: &Box<dyn Shape>,
     hit_distance: f32,
     lights: &[Box<dyn Light>]
-) -> (Color<f32>, Vec3<f32>, Vec3<f32>) {
+) -> (Color, Vec3, Vec3) {
     let shape_position = shape.get_position();
     let shape_color = shape.get_surface_color();
 
