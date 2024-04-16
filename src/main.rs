@@ -1,8 +1,8 @@
 use ray_tracing::renderer::Renderer;
 
 fn main() {
-    let mut renderer = Renderer::new((1280, 1280));
+    let mut renderer = Renderer::new((1080.0, 1080.0));
 
-    renderer.setup_scene();
+    //renderer.setup_scene();
     renderer.start();
 }

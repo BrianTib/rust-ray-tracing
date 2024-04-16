@@ -24,8 +24,8 @@ use crate::{
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
-    pub position: [f32; 3],
-    pub color: [f32; 3],
+    pub position: [f32; 2],
+    //pub color: [f32; 3],
 }
 
 impl Vertex {
@@ -43,31 +43,45 @@ impl Vertex {
     }
 
     fn is_equal(&self, other: &Vertex) -> bool {
-        self.position == other.position && self.color == other.color
+        //self.position == other.position && self.color == other.color
+        self.position == other.position
     }
 }
 
 pub struct Renderer {
-    pub dimensions: (u32, u32),
+    pub dimensions: (f32, f32),
     pub scene: Scene,
-    pub vertex_buffer: Vec<Vec<Vertex>>
+    pub vertex_buffer: Vec<Vertex>
 }
 
 impl Renderer {
     const MAX_VERTEX_BUFFER: usize = 2;
 
-    pub fn new(dimensions: (u32, u32)) -> Self {
+    pub fn new(dimensions: (f32, f32)) -> Self {
         let camera = Camera::new()
-            .set_position(Vec3::new(0.0, 0.0, 3.0))
+            .set_position(Vec3::new(0.0, 0.0, 5.0))
             .set_direction(Vec3::new(0.0, 0.0, -1.0));
 
         let scene = Scene::new()
             .add_camera(camera);
 
+        let mut vertex_buffer = Vec::with_capacity(Self::MAX_VERTEX_BUFFER);
+        let width = dimensions.0 as usize;
+        let height = dimensions.1 as usize;
+        //let aspect_ratio = dimensions.0 / dimensions.1;
+        
+        for y in 0..height {
+            for x in 0..width {
+                let x_normalized = (x as f32 / width as f32) * 2.0 - 1.0;
+                let y_normalized = (y as f32 / height as f32) * 2.0 - 1.0;
+                vertex_buffer.push(Vertex { position: [x_normalized, y_normalized] });
+            }
+        }
+
         Self {
             dimensions,
             scene,
-            vertex_buffer: Vec::with_capacity(Self::MAX_VERTEX_BUFFER)
+            vertex_buffer
         }
     }
 
@@ -154,20 +168,6 @@ impl Renderer {
     
         let instance = wgpu::Instance::default();
     
-        // const VERTICES: &[Vertex] = &[
-        //     Vertex { position: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
-        //     Vertex { position: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
-        //     Vertex { position: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
-        //     Vertex { position: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
-        //     Vertex { position: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
-        // ];
-    
-        // const INDICES: &[u16] = &[
-        //     0, 1, 4,
-        //     1, 2, 4,
-        //     2, 3, 4,
-        // ];
-    
         let surface = instance.create_surface(&window).unwrap();
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -241,7 +241,7 @@ impl Renderer {
     
         surface.configure(&device, &config);
 
-        let vertices = self.scene.render(self.dimensions);
+        //let vertices = self.scene.render(self.dimensions);
 
         //println!("{vertices:#?}");
         // let mut vertices = [
@@ -268,7 +268,7 @@ impl Renderer {
                             // Reconfigure the surface with the new size
                             config.width = new_size.width.max(1);
                             config.height = new_size.height.max(1);
-                            self.dimensions = (config.width, config.height);
+                            self.dimensions = (config.width as f32, config.height as f32);
                             surface.configure(&device, &config);
                             // On macos the window needs to be redrawn manually after resizing
                             window.request_redraw();
@@ -282,14 +282,10 @@ impl Renderer {
                                 .texture
                                 .create_view(&wgpu::TextureViewDescriptor::default());
 
-                            // for v in vertices.iter_mut() {
-                            //     v.position[0] += 0.001;
-                            // }
-
                             let vertex_buffer = device.create_buffer_init(
                                 &wgpu::util::BufferInitDescriptor {
                                     label: None,
-                                    contents: bytemuck::cast_slice(&vertices),
+                                    contents: bytemuck::cast_slice(&self.vertex_buffer),
                                     usage: wgpu::BufferUsages::VERTEX,
                                 }
                             );
@@ -318,9 +314,7 @@ impl Renderer {
                                     
                                 rpass.set_pipeline(&render_pipeline);
                                 rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
-                                //rpass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-                                //rpass.draw_indexed(0..num_indices, 0, 0..1);
-                                rpass.draw(0..vertices.len() as u32, 0..1);
+                                rpass.draw(0..self.vertex_buffer.len() as u32, 0..1);
                             }
     
                             //println!("Redrawing");

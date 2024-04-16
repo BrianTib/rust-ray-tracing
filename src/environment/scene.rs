@@ -82,49 +82,49 @@ impl Scene {
     }
 
     /// Output all of the views from all of the `.cameras` as .png images
-    pub fn render(&mut self, dimensions: (u32, u32)) -> Vec<Vertex> {        
+    pub fn render(&mut self, dimensions: (f32, f32)) -> Vec<Vertex> {        
         self.render_camera(dimensions)
     }
 
     /// Render the view from a camera at the given index
-    pub fn render_camera(&mut self, dimensions: (u32, u32)) -> Vec<Vertex>{
+    pub fn render_camera(&mut self, dimensions: (f32, f32)) -> Vec<Vertex>{
         let (width, height) = dimensions;
-        let aspect_ratio = width as f32 / height as f32;
+        //let aspect_ratio = width as f32 / height as f32;
         let mut vertices: Vec<Vertex> = Vec::with_capacity((width * height) as usize);
 
-        let camera_position = self.camera.position.clone();
-        let ray_directions = self.camera.get_ray_directions(width, height, aspect_ratio);
+        //let camera_position = self.camera.position.clone();
+        //let ray_directions = self.camera.get_ray_directions(width, height, aspect_ratio);
 
-        for y in 0..height {
+        for y in 0..height as u32 {
             //print!("Rendering image... Rows left: {}", height - y);
             //io::stdout().flush().unwrap();
             
-            for x in 0..width {
-                let index = (x + y * width) as usize;
+            for x in 0..width as u32 {
+                // let index = (x + y * width) as usize;
 
-                let mut ray = Ray::new(
-                    camera_position,
-                    ray_directions[index]
-                );
+                // let mut ray = Ray::new(
+                //     camera_position,
+                //     ray_directions[index]
+                // );
 
-                let color = evaluate_pixel(
-                    &mut ray,
-                    &self.shapes,
-                    &self.lights
-                );
+                // let color = evaluate_pixel(
+                //     &mut ray,
+                //     &self.shapes,
+                //     &self.lights
+                // );
 
                 let x = ((x as f32 / width as f32) * 2.0) - 1.0;
                 let y = ((y as f32 / height as f32) * 2.0) - 1.0;
 
-                // vertices.push(Vertex {
-                //     position: [x, y, 1.0],
-                //     color: [1.0, 1.0, 1.0]
-                // }); 
-
                 vertices.push(Vertex {
-                    position: [x as f32, y as f32, 0.0],
-                    color: [color.r, color.g, color.b]
-                });       
+                    position: [x, y],
+                    //color: [1.0, 1.0, 1.0]
+                }); 
+
+                // vertices.push(Vertex {
+                //     position: [x as f32, y as f32, 0.0],
+                //     color: [color.r, color.g, color.b]
+                // });       
             }
         }
 
