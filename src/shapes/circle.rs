@@ -1,5 +1,9 @@
 use super::Shape;
-use crate::util::{Material, Color, vec::*};
+use crate::{
+    util::{Material, Color, vec::*},
+    renderer::Vertex
+};
+
 pub struct Circle {
     pub position: Vec3,
     pub radius: f32,
@@ -14,4 +18,8 @@ impl Shape for Circle {
     fn get_position(&self) -> Vec3 { self.position }
     fn get_radius(&self) -> Option<f32> { Some(self.radius) }
     fn get_material(&self) -> Material { self.material }
+
+    fn get_vertices(&self) -> &[Vertex] {
+        &[]
+    }
 }

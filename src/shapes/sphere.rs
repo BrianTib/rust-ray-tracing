@@ -1,5 +1,12 @@
 use super::Shape;
-use crate::util::{Material, Color, vec::*};
+use crate::{
+    util::{
+        Material,
+        Color,
+        vec::*
+    },
+    renderer::Vertex
+};
 
 #[derive(Debug)]
 pub struct Sphere {
@@ -25,4 +32,8 @@ impl Shape for Sphere {
     fn get_position(&self) -> Vec3 { self.position }
     fn get_radius(&self) -> Option<f32> { Some(self.radius) }
     fn get_material(&self) -> Material { self.material }
+
+    fn get_vertices(&self) -> &[Vertex] {
+        &[]
+    }
 }

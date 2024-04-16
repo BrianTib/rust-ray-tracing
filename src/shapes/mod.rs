@@ -4,7 +4,10 @@ mod sphere;
 pub use circle::Circle;
 pub use sphere::Sphere;
 
-use crate::util::{Color, Material, vec::Vec3};
+use crate::{
+    util::{Color, Material, vec::Vec3},
+    renderer::Vertex
+};
 
 pub trait Shape: 'static  {
     fn has_radius(&self) -> bool;
@@ -13,4 +16,5 @@ pub trait Shape: 'static  {
     fn get_position(&self) -> Vec3;
     fn get_surface_color(&self) -> Color;
     fn get_material(&self) -> Material;
+    fn get_vertices(&self) -> &[Vertex];
 }

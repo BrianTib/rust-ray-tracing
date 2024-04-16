@@ -1,16 +1,31 @@
 use std::borrow::Cow;
-use wgpu::util::DeviceExt;
+use wgpu::{hal::MAX_VERTEX_BUFFERS, util::DeviceExt};
 use winit::{
     event::{Event, WindowEvent},
     event_loop::EventLoop,
     window::Window,
 };
 
+use crate::{
+    shapes::Sphere,
+    environment::{
+        scene::Scene,
+        camera::Camera,
+        light::PointLight
+    },
+    util::{
+        Color,
+        Material,
+        vec::*,
+        random_range
+    }
+};
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct Vertex {
-    position: [f32; 3],
-    color: [f32; 3],
+pub struct Vertex {
+    pub position: [f32; 3],
+    pub color: [f32; 3],
 }
 
 impl Vertex {
@@ -32,42 +47,126 @@ impl Vertex {
     }
 }
 
-pub struct Renderer {}
+pub struct Renderer {
+    pub dimensions: (u32, u32),
+    pub scene: Scene,
+    pub vertex_buffer: Vec<Vec<Vertex>>
+}
 
 impl Renderer {
-    pub fn start() {
+    const MAX_VERTEX_BUFFER: usize = 2;
+
+    pub fn new(dimensions: (u32, u32)) -> Self {
+        let camera = Camera::new()
+            .set_position(Vec3::new(0.0, 0.0, 3.0))
+            .set_direction(Vec3::new(0.0, 0.0, -1.0));
+
+        let scene = Scene::new()
+            .add_camera(camera);
+
+        Self {
+            dimensions,
+            scene,
+            vertex_buffer: Vec::with_capacity(Self::MAX_VERTEX_BUFFER)
+        }
+    }
+
+    pub fn setup_scene(&mut self) {
+        let mut spheres: Vec<Sphere> = Vec::new();
+
+        // Generate random spheres
+        // let sphere_count = 100;
+
+        // let position_range = -7.5..7.5;
+        // let normal_range = 0.0..1.0;
+
+        // for _ in 0..sphere_count {
+        //     let sphere = Sphere::new(
+        //         Vec3::new(random_range(position_range.clone()), random_range(position_range.clone()), random_range(position_range.clone())),
+        //         random_range(normal_range.clone()),
+        //         Material {
+        //             albedo: Color::rgb(random_range(normal_range.clone()), random_range(normal_range.clone()), random_range(normal_range.clone())),
+        //             roughness: random_range(normal_range.clone()),
+        //             metallic: random_range(normal_range.clone())
+        //         }
+        //     );
+
+        //     spheres.push(sphere);
+        // }
+
+        // Top sphere
+        spheres.push(
+            Sphere::new(
+                Vec3::new(-1.7, 0.0, 0.0),
+                1.0,
+                Material {
+                    albedo: Color::rgb(1.0, 0.0, 0.1),
+                    roughness: 0.1,
+                    metallic: 1.0,
+                    ..Default::default()
+                } 
+            )
+        );
+
+        // Floor sphere
+        spheres.push(
+            Sphere::new(
+                Vec3::new(0.1, 0.0, 0.0),
+                1.0,
+                Material {
+                    albedo: Color::rgb(0.0, 0.5, 0.0),
+                    roughness: 0.1,
+                    //metallic: 1.0,
+                    ..Default::default()
+                } 
+            )
+        );
+
+        let point_light = PointLight::new(
+            Vec3::new(-0.5, -2.0, 0.0),
+            Vec3::new(0.0, -1.0, -1.0),
+            1.0
+        );
+
+        self.scene
+            .add_shapes(spheres)
+            .add_light(point_light);
+    }
+
+    pub fn start(&mut self) {
         env_logger::init();
 
         let event_loop = EventLoop::new().unwrap();
         let builder = winit::window::WindowBuilder::new()
             .with_title("Ray Tracer")
-            .with_inner_size(winit::dpi::LogicalSize::new(1280.0, 720.0));
+            .with_resizable(false)
+            .with_inner_size(winit::dpi::LogicalSize::new(self.dimensions.0, self.dimensions.1));
 
         let window = builder.build(&event_loop).unwrap();
 
-        pollster::block_on(Self::run(event_loop, window));
+        pollster::block_on(self.run(event_loop, window));
     }
 
-    async fn run(event_loop: EventLoop<()>, window: Window) {
+    async fn run(&mut self, event_loop: EventLoop<()>, window: Window) {
         let mut size = window.inner_size();
         size.width = size.width.max(1);
         size.height = size.height.max(1);
     
         let instance = wgpu::Instance::default();
     
-        const VERTICES: &[Vertex] = &[
-            Vertex { position: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
-            Vertex { position: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
-            Vertex { position: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
-            Vertex { position: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
-            Vertex { position: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
-        ];
+        // const VERTICES: &[Vertex] = &[
+        //     Vertex { position: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
+        //     Vertex { position: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
+        //     Vertex { position: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
+        //     Vertex { position: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
+        //     Vertex { position: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
+        // ];
     
-        const INDICES: &[u16] = &[
-            0, 1, 4,
-            1, 2, 4,
-            2, 3, 4,
-        ];
+        // const INDICES: &[u16] = &[
+        //     0, 1, 4,
+        //     1, 2, 4,
+        //     2, 3, 4,
+        // ];
     
         let surface = instance.create_surface(&window).unwrap();
         let adapter = instance
@@ -95,28 +194,10 @@ impl Renderer {
             .await
             .expect("Failed to create device");
     
-        let vertex_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(VERTICES),
-                usage: wgpu::BufferUsages::VERTEX,
-            }
-        );
-    
-        let index_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(INDICES),
-                usage: wgpu::BufferUsages::INDEX,
-            }
-        );
-    
-        let num_indices = INDICES.len() as u32;
-    
         // Load the shaders from disk
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("ray_shader.wgsl"))),
         });
     
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -139,9 +220,16 @@ impl Renderer {
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: "fs_main",
-                targets: &[Some(swapchain_format.into())],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: swapchain_format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL
+                })]
             }),
-            primitive: wgpu::PrimitiveState::default(),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::PointList,
+                ..Default::default()
+            },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
@@ -152,6 +240,15 @@ impl Renderer {
             .unwrap();
     
         surface.configure(&device, &config);
+
+        let vertices = self.scene.render(self.dimensions);
+
+        //println!("{vertices:#?}");
+        // let mut vertices = [
+        //     Vertex { position: [0.0, 0.0, 0.0], color: [1.0, 0.0, 0.0 ] },
+        //     // Vertex { position: [-0.4, 0.0, 0.0], color: [1.0, 0.0, 0.0 ] },
+        //     // Vertex { position: [-0.4, -0.1, 0.0], color: [1.0, 0.0, 0.0 ] },
+        // ];
     
         let window = &window;
         event_loop
@@ -171,6 +268,7 @@ impl Renderer {
                             // Reconfigure the surface with the new size
                             config.width = new_size.width.max(1);
                             config.height = new_size.height.max(1);
+                            self.dimensions = (config.width, config.height);
                             surface.configure(&device, &config);
                             // On macos the window needs to be redrawn manually after resizing
                             window.request_redraw();
@@ -183,11 +281,24 @@ impl Renderer {
                             let view = frame
                                 .texture
                                 .create_view(&wgpu::TextureViewDescriptor::default());
+
+                            // for v in vertices.iter_mut() {
+                            //     v.position[0] += 0.001;
+                            // }
+
+                            let vertex_buffer = device.create_buffer_init(
+                                &wgpu::util::BufferInitDescriptor {
+                                    label: None,
+                                    contents: bytemuck::cast_slice(&vertices),
+                                    usage: wgpu::BufferUsages::VERTEX,
+                                }
+                            );
                             
                             let mut encoder =
                                 device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                                     label: None,
                                 });
+
                             {
                                 let mut rpass =
                                     encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -204,12 +315,15 @@ impl Renderer {
                                         timestamp_writes: None,
                                         occlusion_query_set: None,
                                     });
+                                    
                                 rpass.set_pipeline(&render_pipeline);
                                 rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
-                                rpass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-                                rpass.draw_indexed(0..num_indices, 0, 0..1);
+                                //rpass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                                //rpass.draw_indexed(0..num_indices, 0, 0..1);
+                                rpass.draw(0..vertices.len() as u32, 0..1);
                             }
     
+                            //println!("Redrawing");
                             queue.submit(Some(encoder.finish()));
                             frame.present();
                         }

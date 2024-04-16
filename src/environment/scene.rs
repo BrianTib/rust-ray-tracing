@@ -1,6 +1,6 @@
-use image::{ImageBuffer, Rgba};
+use image::Rgba;
 //use num_traits::Pow;
-use std::{time::Instant, io::Write};
+use std::time::Instant;
 //use std::io;
 
 use super::{
@@ -11,16 +11,15 @@ use super::{
 use crate::{
     shapes::Shape,
     util::{Color, Ray, vec::*},
+    renderer::Vertex
 };
 
 pub type RenderSpace = u8;
 pub type RenderFormat = Rgba<RenderSpace>;
-pub type RendarableImage = ImageBuffer<RenderFormat, Vec<RenderSpace>>;
 
 /// A scene with technically infinite dimensions
 pub struct Scene {
-    pub image: RendarableImage,
-    pub cameras: Vec<Camera>,
+    pub camera: Camera,
     pub shapes: Vec<Box<dyn Shape>>,
     pub lights: Vec<Box<dyn Light>>
 }
@@ -28,10 +27,9 @@ pub struct Scene {
 impl Default for Scene {
     fn default() -> Self {
         Self {
-            image: ImageBuffer::new(200, 200),
             lights: Vec::new(),
             shapes: Vec::new(),
-            cameras: Vec::new()
+            camera: Camera::new()
         }
     }
 }
@@ -39,11 +37,8 @@ impl Default for Scene {
 impl Scene {
     /// Creates a new scene
     /// `width` and `heigh` refer to the size of the images being output by the renderer
-    pub fn new(width: u32, height: u32) -> Self {
-        Self {
-            image: ImageBuffer::new(width, height),
-            ..Default::default()
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Adds a [Shape] object to the scene
@@ -81,32 +76,24 @@ impl Scene {
     /// Adds a camera to the array of cameras
     /// when [`Scene::render()`] is called, resulting images
     /// are made from all of the given cameras
-    pub fn add_camera(&mut self, camera: Camera) -> &mut Self {
-        self.cameras.push(camera);
+    pub fn add_camera(mut self, camera: Camera) -> Self {
+        self.camera = camera;
         self
     }
 
     /// Output all of the views from all of the `.cameras` as .png images
-    pub fn render(&mut self) {
-        if self.cameras.len() <= 0 {
-            panic!("No cameras to render!");
-        }
-        
-        for i in 0..self.cameras.len() {
-            self.render_camera(i);
-        }
+    pub fn render(&mut self, dimensions: (u32, u32)) -> Vec<Vertex> {        
+        self.render_camera(dimensions)
     }
 
     /// Render the view from a camera at the given index
-    pub fn render_camera(&mut self, camera_index: usize) {
-        let (width, height) = self.image.dimensions();
+    pub fn render_camera(&mut self, dimensions: (u32, u32)) -> Vec<Vertex>{
+        let (width, height) = dimensions;
         let aspect_ratio = width as f32 / height as f32;
+        let mut vertices: Vec<Vertex> = Vec::with_capacity((width * height) as usize);
 
-        let time = Instant::now();
-        let mut colors: Vec<RenderFormat> = Vec::with_capacity((width * height) as usize);
-
-        let camera_position = self.cameras[camera_index].position.clone();
-        let ray_directions = self.cameras[camera_index].get_ray_directions(width, height, aspect_ratio);
+        let camera_position = self.camera.position.clone();
+        let ray_directions = self.camera.get_ray_directions(width, height, aspect_ratio);
 
         for y in 0..height {
             //print!("Rendering image... Rows left: {}", height - y);
@@ -126,34 +113,22 @@ impl Scene {
                     &self.lights
                 );
 
-                colors.push(RenderFormat::from([
-                    (color.r * 255.0) as RenderSpace,
-                    (color.g * 255.0) as RenderSpace,
-                    (color.b * 255.0) as RenderSpace,
-                    (color.a * 255.0) as RenderSpace
-                ]));        
-            }
+                let x = ((x as f32 / width as f32) * 2.0) - 1.0;
+                let y = ((y as f32 / height as f32) * 2.0) - 1.0;
 
-            //std::thread::sleep(std::time::Duration::from_millis(2));
-            //print!("\x1b[2K\r");
+                // vertices.push(Vertex {
+                //     position: [x, y, 1.0],
+                //     color: [1.0, 1.0, 1.0]
+                // }); 
+
+                vertices.push(Vertex {
+                    position: [x as f32, y as f32, 0.0],
+                    color: [color.r, color.g, color.b]
+                });       
+            }
         }
 
-        let time = Instant::now() - time;
-        println!("Rendering image #{} took: ~{:?}. Saving image...", camera_index + 1, time);
-
-        for y in 0..height {
-            for x in 0..width {
-                self.image.put_pixel(x, y, colors[(x + y * width) as usize]);
-            }
-
-            // if y % 100 == 0 {
-            //     // Save the image to a file
-            //     self.image.save("output.png").unwrap();
-            // }
-        }
-
-        // Save the image to a file
-        self.image.save(format!("camera{}.png", camera_index + 1)).unwrap();
+        return vertices;
     }
 }
 
@@ -162,13 +137,14 @@ fn evaluate_pixel(
     shapes: &[Box<dyn Shape>],
     lights: &[Box<dyn Light>]
 ) -> Color {
-    let sky_color = Color::rgb(0.2, 0.2, 0.2);
+    let sky_color = Color::rgb(0.005, 0.005, 0.005);
 
     let mut color = Color::rgb(0.0, 0.0, 0.0);
     let mut multiplier = 1.0;
 
     for _ in 0..10 {
         let shape_hit = shoot_ray(&ray, &shapes);
+        //println!("{:?}", shape_hit);
         if shape_hit.is_none() {
             color.add_mut(&sky_color.mul_by(multiplier));
             break;
